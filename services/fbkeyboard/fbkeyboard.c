@@ -337,11 +337,13 @@ int check_input_events(int fdinput, int *x, int *y)
 		       && !(ie.type == EV_SYN && ie.code == SYN_REPORT)) {
 			if (ie.type == EV_ABS) {
 				switch (ie.code) {
+					case ABS_X:
 					case ABS_MT_POSITION_X:
 						absolute_x = ie.value;
 						released = 0;
 						key = 0;
 						break;
+					case ABS_Y:
 					case ABS_MT_POSITION_Y:
 						absolute_y = ie.value;
 						released = 0;
@@ -679,8 +681,8 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 	}
-	if ((ioctl(fdinput, EVIOCGABS(ABS_MT_POSITION_X), &abs_x) == -1) ||
-	    (ioctl(fdinput, EVIOCGABS(ABS_MT_POSITION_Y), &abs_y) == -1)) {
+	if ((ioctl(fdinput, EVIOCGABS(ABS_X), &abs_x) == -1) ||
+	    (ioctl(fdinput, EVIOCGABS(ABS_Y), &abs_y) == -1)) {
 		perror("error: getting touchscreen size");
 		exit(-1);
 	}
