@@ -353,6 +353,11 @@ int check_input_events(int fdinput, int *x, int *y)
 						}
 						break;
 				}
+			} else if (ie.type == EV_KEY &&
+			           (ie.code == BTN_MOUSE || ie.code == BTN_TOUCH)) {
+				if (ie.value == 0) {
+					released = 1;
+				}
 			}
 			if (ie.type == EV_SYN && ie.code == SYN_MT_REPORT && key) {
 				released = 1;
