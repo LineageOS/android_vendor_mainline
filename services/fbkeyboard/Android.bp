@@ -1,0 +1,9 @@
+cc_binary {
+    name: "fbkeyboard",
+    srcs: ["fbkeyboard.c"],
+    init_rc: ["fbkeyboard.rc"],
+    shared_libs: [
+        "libft2",
+    ],
+    system_ext_specific: true,
+}

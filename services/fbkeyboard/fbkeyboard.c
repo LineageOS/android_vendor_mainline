@@ -34,7 +34,14 @@
 
 volatile sig_atomic_t done = 0;
 
-char *font = "/usr/share/fonts/ttf-dejavu/DejaVuSans.ttf";
+#ifdef __ANDROID__
+#define FB_PATH "/dev/graphics/fb0"
+#define FONT_PATH "/system/fonts/DroidSansMono.ttf"
+#else
+#define FB_PATH "/dev/fb0"
+#define FONT_PATH "/usr/share/fonts/ttf-dejavu/DejaVuSans.ttf"
+#endif
+char *font = FONT_PATH;
 char *device = NULL;
 char *special[][7] = {
 	{ "Esc", "Tab", "F10", " / ", " - ", " . ", " \\ " },
@@ -604,9 +611,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	fbfd = open("/dev/fb0", O_RDWR);
+	fbfd = open(FB_PATH, O_RDWR);
 	if (fbfd == -1) {
-		perror("error: opening framebuffer device /dev/fb0");
+		perror("error: opening framebuffer device");
 		exit(-1);
 	}
 	if (ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) == -1) {

@@ -1,0 +1,19 @@
+service fbkeyboard /system_ext/bin/fbkeyboard
+    class early_hal
+    user root
+    group root graphics input uhid
+    stdio_to_kmsg
+    oneshot
+    disabled
+
+on console
+    start fbkeyboard
+
+on property:init.svc.console=running
+    start fbkeyboard
+
+on property:init.svc.surfaceflinger=running
+    stop fbkeyboard
+
+on property:init.svc.surfaceflinger=stopped
+    start fbkeyboard
