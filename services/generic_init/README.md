@@ -1005,7 +1005,7 @@ will leave a bootchart tarball named bootchart.tgz at /tmp/android-bootchart.
 If two such tarballs are preserved on the host machine under different
 directories, the script can list the timestamps differences. For example:
 
-Usage: system/core/init/compare-bootcharts.py _base-bootchart-dir_ _exp-bootchart-dir_
+Usage: vendor/mainline/services/generic_init/compare-bootcharts.py _base-bootchart-dir_ _exp-bootchart-dir_
 
     process: baseline experiment (delta) - Unit is ms (a jiffy is 10 ms on the system)
     ------------------------------------

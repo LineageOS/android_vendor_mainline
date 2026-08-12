@@ -72,7 +72,7 @@
 #include "second_stage_resources.h"
 #include "selinux.h"
 #include "subcontext.h"
-#include "system/core/init/property_service.pb.h"
+#include "vendor/mainline/services/generic_init/property_service.pb.h"
 #include "util.h"
 
 [[maybe_unused]] static constexpr char APPCOMPAT_OVERRIDE_PROP_FOLDERNAME[] =

@@ -23,7 +23,7 @@
 
 #include "builtins.h"
 #include "result.h"
-#include "system/core/init/subcontext.pb.h"
+#include "vendor/mainline/services/generic_init/subcontext.pb.h"
 
 namespace android {
 namespace init {

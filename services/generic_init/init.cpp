@@ -92,7 +92,7 @@
 #include "sigchld_handler.h"
 #include "snapuserd_transition.h"
 #include "subcontext.h"
-#include "system/core/init/property_service.pb.h"
+#include "vendor/mainline/services/generic_init/property_service.pb.h"
 #include "tradeinmode.h"
 #include "util.h"
 

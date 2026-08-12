@@ -20,7 +20,7 @@
 #include <string>
 
 #include "result.h"
-#include "system/core/init/persistent_properties.pb.h"
+#include "vendor/mainline/services/generic_init/persistent_properties.pb.h"
 
 namespace android {
 namespace init {
