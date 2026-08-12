@@ -24,15 +24,14 @@
 namespace android {
 namespace init {
 
-struct parse_state
-{
-    char *ptr;
-    char *text;
+struct parse_state {
+    char* ptr;
+    char* text;
     int line;
     int nexttoken;
 };
 
-int next_token(struct parse_state *state);
+int next_token(struct parse_state* state);
 
 }  // namespace init
 }  // namespace android

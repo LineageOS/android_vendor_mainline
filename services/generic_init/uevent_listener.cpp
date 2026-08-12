@@ -85,8 +85,7 @@ static void ParseEvent(const char* msg, Uevent* uevent) {
         }
 
         // advance to after the next \0
-        while (*msg++)
-            ;
+        while (*msg++);
     }
 
     if (LOG_UEVENTS) {

@@ -85,7 +85,8 @@ static pid_t ReapOneProcess() {
             if (service->flags() & SVC_EXEC) {
                 auto exec_duration = boot_clock::now() - service->time_started();
                 auto exec_duration_ms =
-                    std::chrono::duration_cast<std::chrono::milliseconds>(exec_duration).count();
+                        std::chrono::duration_cast<std::chrono::milliseconds>(exec_duration)
+                                .count();
                 wait_string = StringPrintf(" waiting took %f seconds", exec_duration_ms / 1000.0f);
             } else if (service->flags() & SVC_ONESHOT) {
                 auto exec_duration = boot_clock::now() - service->time_started();

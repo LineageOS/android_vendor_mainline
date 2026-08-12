@@ -110,7 +110,7 @@ Result<int> CreateSocket(const std::string& name, int type, bool passcred, bool 
     if (!socketcon.empty()) setsockcreatecon(nullptr);
 
     struct sockaddr_un addr;
-    memset(&addr, 0 , sizeof(addr));
+    memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
     snprintf(addr.sun_path, sizeof(addr.sun_path), ANDROID_SOCKET_DIR "/%s", name.c_str());
 
@@ -155,9 +155,7 @@ Result<int> CreateSocket(const std::string& name, int type, bool passcred, bool 
     }
 
     LOG(INFO) << "Created socket '" << addr.sun_path << "'"
-              << ", mode " << std::oct << perm << std::dec
-              << ", user " << uid
-              << ", group " << gid;
+              << ", mode " << std::oct << perm << std::dec << ", user " << uid << ", group " << gid;
 
     guard.Disable();
     return fd.release();
@@ -165,7 +163,7 @@ Result<int> CreateSocket(const std::string& name, int type, bool passcred, bool 
 
 Result<std::string> ReadFile(const std::string& path) {
     android::base::unique_fd fd(
-        TEMP_FAILURE_RETRY(open(path.c_str(), O_RDONLY | O_NOFOLLOW | O_CLOEXEC)));
+            TEMP_FAILURE_RETRY(open(path.c_str(), O_RDONLY | O_NOFOLLOW | O_CLOEXEC)));
     if (fd == -1) {
         return ErrnoError() << "open() failed";
     }
@@ -206,7 +204,7 @@ static int OpenFile(const std::string& path, int flags, mode_t mode) {
 
 Result<void> WriteFile(const std::string& path, const std::string& content) {
     android::base::unique_fd fd(TEMP_FAILURE_RETRY(
-        OpenFile(path, O_WRONLY | O_CREAT | O_NOFOLLOW | O_TRUNC | O_CLOEXEC, 0600)));
+            OpenFile(path, O_WRONLY | O_CREAT | O_NOFOLLOW | O_TRUNC | O_CLOEXEC, 0600)));
     if (fd == -1) {
         return ErrnoError() << "open() failed";
     }
@@ -368,7 +366,8 @@ bool read_android_dt_file(const std::string& sub_path, std::string* dt_content) 
     return false;
 }
 
-bool is_android_dt_value_expected(const std::string& sub_path, const std::string& expected_content) {
+bool is_android_dt_value_expected(const std::string& sub_path,
+                                  const std::string& expected_content) {
     std::string dt_content;
     if (read_android_dt_file(sub_path, &dt_content)) {
         if (dt_content == expected_content) {

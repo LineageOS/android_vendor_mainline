@@ -79,11 +79,11 @@
 
 #include "block_dev_initializer.h"
 #include "debug_ramdisk.h"
+#include "ota_utils.h"
 #include "reboot_utils.h"
 #include "second_stage_resources.h"
 #include "snapuserd_transition.h"
 #include "util.h"
-#include "ota_utils.h"
 
 using namespace std::string_literals;
 
@@ -208,9 +208,9 @@ std::optional<const char*> GetUserdebugPlatformPolicyFile() {
     if (force_debuggable_env && "true"s == force_debuggable_env && AvbHandle::IsDeviceUnlocked()) {
         const std::vector<const char*> debug_policy_candidates = {
 #if INSTALL_DEBUG_POLICY_TO_SYSTEM_EXT == 1
-            "/system_ext/etc/selinux/userdebug_plat_sepolicy.cil",
+                "/system_ext/etc/selinux/userdebug_plat_sepolicy.cil",
 #endif
-            kDebugRamdiskSEPolicy,
+                kDebugRamdiskSEPolicy,
         };
         for (const char* debug_policy : debug_policy_candidates) {
             if (access(debug_policy, F_OK) == 0) {
@@ -612,8 +612,8 @@ void MountMissingSystemPartitions() {
             auto replace_name = "system"s + fs_mgr_get_slot_suffix();
 
             entry.mount_point = "/"s + name;
-            entry.blk_device =
-                android::base::StringReplace(entry.blk_device, replace_name, partition_name, false);
+            entry.blk_device = android::base::StringReplace(entry.blk_device, replace_name,
+                                                            partition_name, false);
             if (!fs_mgr_update_logical_partition(&entry)) {
                 LOG(ERROR) << "Could not update logical partition";
                 continue;

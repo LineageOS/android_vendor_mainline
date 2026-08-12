@@ -128,8 +128,8 @@ Result<std::string> ReadPersistentPropertyFile() {
     const std::string temp_filename = persistent_property_filename + ".tmp";
     if (access(temp_filename.c_str(), F_OK) == 0) {
         LOG(INFO)
-            << "Found temporary property file while attempting to persistent system properties"
-               " a previous persistent property write may have failed";
+                << "Found temporary property file while attempting to persistent system properties"
+                   " a previous persistent property write may have failed";
         unlink(temp_filename.c_str());
     }
     auto file_contents = ReadFile(persistent_property_filename);
@@ -170,8 +170,8 @@ Result<PersistentProperties> LoadPersistentPropertyFile() {
 
 Result<void> WritePersistentPropertyFile(const PersistentProperties& persistent_properties) {
     const std::string temp_filename = persistent_property_filename + ".tmp";
-    unique_fd fd(TEMP_FAILURE_RETRY(
-        open(temp_filename.c_str(), O_WRONLY | O_CREAT | O_NOFOLLOW | O_TRUNC | O_CLOEXEC, 0600)));
+    unique_fd fd(TEMP_FAILURE_RETRY(open(
+            temp_filename.c_str(), O_WRONLY | O_CREAT | O_NOFOLLOW | O_TRUNC | O_CLOEXEC, 0600)));
     if (fd == -1) {
         return ErrnoError() << "Could not open temporary properties file";
     }
@@ -320,8 +320,6 @@ PersistentProperties LoadPersistentProperties() {
 
     return updated_persistent_properties;
 }
-
-
 
 }  // namespace init
 }  // namespace android

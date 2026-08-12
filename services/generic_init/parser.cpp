@@ -89,8 +89,9 @@ void Parser::ParseData(const std::string& filename, std::string* data) {
                 // current section parsers.  This is meant for /sys/ and /dev/ line entries for
                 // uevent.
                 auto line_callback = std::find_if(
-                    line_callbacks_.begin(), line_callbacks_.end(),
-                    [&args](const auto& c) { return android::base::StartsWith(args[0], c.first); });
+                        line_callbacks_.begin(), line_callbacks_.end(), [&args](const auto& c) {
+                            return android::base::StartsWith(args[0], c.first);
+                        });
                 if (line_callback != line_callbacks_.end()) {
                     end_section();
 
@@ -169,7 +170,7 @@ bool Parser::ParseConfigDir(const std::string& path) {
         // Ignore directories and only process regular files.
         if (current_file->d_type == DT_REG) {
             std::string current_path =
-                android::base::StringPrintf("%s/%s", path.c_str(), current_file->d_name);
+                    android::base::StringPrintf("%s/%s", path.c_str(), current_file->d_name);
             files.emplace_back(current_path);
         }
     }

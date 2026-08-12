@@ -455,26 +455,26 @@ static Result<void> do_umount(const BuiltinArguments& args) {
 }
 
 static struct {
-    const char *name;
+    const char* name;
     unsigned flag;
 } mount_flags[] = {
-    { "noatime",    MS_NOATIME },
-    { "noexec",     MS_NOEXEC },
-    { "nosuid",     MS_NOSUID },
-    { "nodev",      MS_NODEV },
-    { "nodiratime", MS_NODIRATIME },
-    { "ro",         MS_RDONLY },
-    { "rw",         0 },
-    { "remount",    MS_REMOUNT },
-    { "bind",       MS_BIND },
-    { "rec",        MS_REC },
-    { "unbindable", MS_UNBINDABLE },
-    { "private",    MS_PRIVATE },
-    { "slave",      MS_SLAVE },
-    { "shared",     MS_SHARED },
-    { "nosymfollow", MS_NOSYMFOLLOW },
-    { "defaults",   0 },
-    { 0,            0 },
+        {"noatime", MS_NOATIME},
+        {"noexec", MS_NOEXEC},
+        {"nosuid", MS_NOSUID},
+        {"nodev", MS_NODEV},
+        {"nodiratime", MS_NODIRATIME},
+        {"ro", MS_RDONLY},
+        {"rw", 0},
+        {"remount", MS_REMOUNT},
+        {"bind", MS_BIND},
+        {"rec", MS_REC},
+        {"unbindable", MS_UNBINDABLE},
+        {"private", MS_PRIVATE},
+        {"slave", MS_SLAVE},
+        {"shared", MS_SHARED},
+        {"nosymfollow", MS_NOSYMFOLLOW},
+        {"defaults", 0},
+        {0, 0},
 };
 
 /* mount <type> <device> <path> <flags ...> <options> */
@@ -532,12 +532,10 @@ static Result<void> do_mount(const BuiltinArguments& args) {
             return ErrnoError() << "mount() failed";
         }
     } else {
-        if (wait)
-            wait_for_file(source, kCommandRetryTimeout);
+        if (wait) wait_for_file(source, kCommandRetryTimeout);
         if (mount(source, target, system, flags, options) < 0) {
             return ErrnoErrorIgnoreEnoent() << "mount() failed";
         }
-
     }
 
     return {};
@@ -588,7 +586,7 @@ static Result<void> queue_fs_event(int code) {
             return Error() << "cannot wipe within GSI";
         }
         PLOG(ERROR) << "fs_mgr_mount_all suggested recovery, so wiping data via recovery.";
-        const std::vector<std::string> options = {"--wipe_data", "--reason=fs_mgr_mount_all" };
+        const std::vector<std::string> options = {"--wipe_data", "--reason=fs_mgr_mount_all"};
         return reboot_into_recovery(options);
         /* If reboot worked, there is no return. */
     } else if (code == FS_MGR_MNTALL_DEV_FILE_ENCRYPTED ||
@@ -924,7 +922,7 @@ static Result<void> do_readahead(const BuiltinArguments& args) {
         } else if (S_ISDIR(sb.st_mode)) {
             char* paths[] = {const_cast<char*>(args[1].data()), nullptr};
             std::unique_ptr<FTS, decltype(&fts_close)> fts(
-                fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV, nullptr), fts_close);
+                    fts_open(paths, FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV, nullptr), fts_close);
             if (!fts) {
                 PLOG(ERROR) << "Error opening directory: " << args[1];
                 _exit(EXIT_FAILURE);
@@ -936,7 +934,7 @@ static Result<void> do_readahead(const BuiltinArguments& args) {
                     const std::string filename = ftsent->fts_accpath;
                     if (auto result = readahead_file(filename, readfully); !result.ok()) {
                         LOG(WARNING)
-                            << "Unable to readahead '" << filename << "': " << result.error();
+                                << "Unable to readahead '" << filename << "': " << result.error();
                     }
                 }
             }
@@ -952,7 +950,8 @@ static Result<void> do_readahead(const BuiltinArguments& args) {
 static Result<void> do_copy(const BuiltinArguments& args) {
     auto file_contents = ReadFile(args[1]);
     if (!file_contents.ok()) {
-        return Error() << "Could not read input file '" << args[1] << "': " << file_contents.error();
+        return Error() << "Could not read input file '" << args[1]
+                       << "': " << file_contents.error();
     }
     if (auto result = WriteFile(args[2], *file_contents); !result.ok()) {
         return Error() << "Could not write to output file '" << args[2] << "': " << result.error();
@@ -1054,14 +1053,24 @@ static Result<void> do_loglevel(const BuiltinArguments& args) {
     android::base::ParseInt(args[1], &log_level);
     android::base::LogSeverity severity;
     switch (log_level) {
-        case 7: severity = android::base::DEBUG; break;
-        case 6: severity = android::base::INFO; break;
+        case 7:
+            severity = android::base::DEBUG;
+            break;
+        case 6:
+            severity = android::base::INFO;
+            break;
         case 5:
-        case 4: severity = android::base::WARNING; break;
-        case 3: severity = android::base::ERROR; break;
+        case 4:
+            severity = android::base::WARNING;
+            break;
+        case 3:
+            severity = android::base::ERROR;
+            break;
         case 2:
         case 1:
-        case 0: severity = android::base::FATAL; break;
+        case 0:
+            severity = android::base::FATAL;
+            break;
         default:
             return Error() << "invalid log level " << log_level;
     }

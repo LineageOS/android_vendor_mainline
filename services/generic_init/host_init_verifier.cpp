@@ -103,11 +103,11 @@ passwd* getpwnam(const char* login) {  // NOLINT: implementing bad function.
     static char static_dir[32] = "/";
     static char static_shell[32] = "/system/bin/sh";
     static passwd static_passwd = {
-        .pw_name = static_name,
-        .pw_dir = static_dir,
-        .pw_uid = 0,
-        .pw_gid = 0,
-        .pw_shell = static_shell,
+            .pw_name = static_name,
+            .pw_dir = static_dir,
+            .pw_uid = 0,
+            .pw_gid = 0,
+            .pw_shell = static_shell,
     };
 
     for (size_t n = 0; n < android_id_count; ++n) {
@@ -309,8 +309,8 @@ int main(int argc, char** argv) {
         }
     } else {
         if (!parser.ParseConfigFileInsecure(*argv, true /* follow_symlinks */)) {
-          // Follow symlinks as inputs during build execution in Bazel's
-          // execution root are symlinks, unlike Soong or Make.
+            // Follow symlinks as inputs during build execution in Bazel's
+            // execution root are symlinks, unlike Soong or Make.
             LOG(ERROR) << "Failed to open init rc script '" << *argv << "'";
             return EXIT_FAILURE;
         }

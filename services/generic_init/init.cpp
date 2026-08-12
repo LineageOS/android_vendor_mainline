@@ -92,9 +92,9 @@
 #include "sigchld_handler.h"
 #include "snapuserd_transition.h"
 #include "subcontext.h"
-#include "vendor/mainline/services/generic_init/property_service.pb.h"
 #include "tradeinmode.h"
 #include "util.h"
+#include "vendor/mainline/services/generic_init/property_service.pb.h"
 
 #ifndef RECOVERY
 #include "com_android_apex.h"

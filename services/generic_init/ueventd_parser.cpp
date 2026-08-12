@@ -152,7 +152,7 @@ Result<void> ParseEnabledDisabledLine(std::vector<std::string>&& args, bool* fea
 }
 
 Result<void> ParseParallelRestoreconDirsLine(std::vector<std::string>&& args,
-                                          std::vector<std::string>* parallel_restorecon_dirs) {
+                                             std::vector<std::string>* parallel_restorecon_dirs) {
     if (args.size() != 2) {
         return Error() << "parallel_restorecon_dir lines must have exactly 2 parameters";
     }
@@ -253,7 +253,7 @@ Result<void> SubsystemParser::ParseDirName(std::vector<std::string>&& args) {
 }
 
 Result<void> SubsystemParser::ParseLineSection(std::vector<std::string>&& args, int line) {
-    using OptionParser = Result<void> (SubsystemParser::*)(std::vector<std::string> && args);
+    using OptionParser = Result<void> (SubsystemParser::*)(std::vector<std::string>&& args);
     // clang-format off
     [[clang::no_destroy]] static const KeywordMap<OptionParser> parser_map = {
         {"devname",     {1,     1,      &SubsystemParser::ParseDevName}},

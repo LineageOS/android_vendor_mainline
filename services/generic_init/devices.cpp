@@ -430,7 +430,7 @@ void DeviceHandler::FixupSysPermissions(const std::string& upath,
 }
 
 std::tuple<mode_t, uid_t, gid_t> DeviceHandler::GetDevicePermissions(
-    const std::string& path, const std::vector<std::string>& links) const {
+        const std::string& path, const std::vector<std::string>& links) const {
     // Search the perms list in reverse so that ueventd.$hardware can override ueventd.rc.
     for (auto it = dev_permissions_.crbegin(); it != dev_permissions_.crend(); ++it) {
         if (it->Match(path) || std::any_of(links.cbegin(), links.cend(),
@@ -518,10 +518,10 @@ out:
 // length of the resulting string is equal to the input string
 void SanitizePartitionName(std::string* string) {
     const char* accept =
-        "abcdefghijklmnopqrstuvwxyz"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "0123456789"
-        "_-.";
+            "abcdefghijklmnopqrstuvwxyz"
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "0123456789"
+            "_-.";
 
     if (!string) return;
 
@@ -619,7 +619,8 @@ static void RemoveDeviceMapperLinks(const std::string& devpath) {
 }
 
 void DeviceHandler::HandleDevice(const std::string& action, const std::string& devpath, bool block,
-                                 int major, int minor, const std::vector<std::string>& links) const {
+                                 int major, int minor,
+                                 const std::vector<std::string>& links) const {
     if (action == "add") {
         MakeDevice(devpath, block, major, minor, links);
     }
@@ -814,7 +815,7 @@ void DeviceHandler::HandleUevent(const Uevent& uevent) {
             links = GetBlockDeviceSymlinks(uevent);
         }
     } else if (const auto subsystem =
-                   std::find(subsystems_.cbegin(), subsystems_.cend(), uevent.subsystem);
+                       std::find(subsystems_.cbegin(), subsystems_.cend(), uevent.subsystem);
                subsystem != subsystems_.cend()) {
         devpath = subsystem->ParseDevPath(uevent);
     } else if (uevent.subsystem == "usb") {

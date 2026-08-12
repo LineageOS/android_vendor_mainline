@@ -85,8 +85,7 @@ class Action {
 
   private:
     void ExecuteCommand(const Command& command) const;
-    bool CheckPropertyTriggers(const std::string& name = "",
-                               const std::string& value = "") const;
+    bool CheckPropertyTriggers(const std::string& name = "", const std::string& value = "") const;
 
     std::map<std::string, std::string> property_triggers_;
     std::string event_trigger_;

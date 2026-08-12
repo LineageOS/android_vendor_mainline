@@ -45,11 +45,10 @@ Result<void> Epoll::RegisterHandler(int fd, Handler handler, uint32_t events) {
         return Error() << "Must specify events";
     }
 
-    auto [it, inserted] = epoll_handlers_.emplace(
-            fd, Info{
-                        .handler = std::move(handler),
-                        .events = events,
-                });
+    auto [it, inserted] = epoll_handlers_.emplace(fd, Info{
+                                                              .handler = std::move(handler),
+                                                              .events = events,
+                                                      });
     if (!inserted) {
         return Error() << "Cannot specify two epoll handlers for a given FD";
     }

@@ -63,7 +63,7 @@ static bool subcontext_terminated_by_shutdown;
 class SubcontextProcess {
   public:
     SubcontextProcess(const BuiltinFunctionMap* function_map, std::string context, int init_fd)
-        : function_map_(function_map), context_(std::move(context)), init_fd_(init_fd){};
+        : function_map_(function_map), context_(std::move(context)), init_fd_(init_fd) {};
     void MainLoop();
 
   private:
@@ -281,7 +281,8 @@ Result<SubcontextReply> Subcontext::TransmitMessage(const SubcontextCommand& sub
     auto subcontext_message = ReadMessage(socket_.get());
     if (!subcontext_message.ok()) {
         Restart();
-        return Error() << "Failed to receive result from subcontext: " << subcontext_message.error();
+        return Error() << "Failed to receive result from subcontext: "
+                       << subcontext_message.error();
     }
 
     auto subcontext_reply = SubcontextReply{};
@@ -299,9 +300,9 @@ Result<SubcontextReply> Subcontext::TransmitMessage(const SubcontextCommand& sub
 
 Result<void> Subcontext::Execute(const std::vector<std::string>& args) {
     auto subcontext_command = SubcontextCommand();
-    std::copy(
-        args.begin(), args.end(),
-        RepeatedPtrFieldBackInserter(subcontext_command.mutable_execute_command()->mutable_args()));
+    std::copy(args.begin(), args.end(),
+              RepeatedPtrFieldBackInserter(
+                      subcontext_command.mutable_execute_command()->mutable_args()));
 
     auto subcontext_reply = TransmitMessage(subcontext_command);
     if (!subcontext_reply.ok()) {
@@ -325,7 +326,7 @@ Result<std::vector<std::string>> Subcontext::ExpandArgs(const std::vector<std::s
     auto subcontext_command = SubcontextCommand{};
     std::copy(args.begin(), args.end(),
               RepeatedPtrFieldBackInserter(
-                  subcontext_command.mutable_expand_args_command()->mutable_args()));
+                      subcontext_command.mutable_expand_args_command()->mutable_args()));
 
     auto subcontext_reply = TransmitMessage(subcontext_command);
     if (!subcontext_reply.ok()) {

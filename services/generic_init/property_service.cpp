@@ -72,8 +72,8 @@
 #include "second_stage_resources.h"
 #include "selinux.h"
 #include "subcontext.h"
-#include "vendor/mainline/services/generic_init/property_service.pb.h"
 #include "util.h"
+#include "vendor/mainline/services/generic_init/property_service.pb.h"
 
 [[maybe_unused]] static constexpr char APPCOMPAT_OVERRIDE_PROP_FOLDERNAME[] =
         "/dev/__properties__/appcompat_override";
@@ -296,7 +296,7 @@ class SocketConnection {
             int nr = poll(&ufd, 1, *timeout_ms);
             auto now = std::chrono::steady_clock::now();
             auto time_elapsed =
-                std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+                    std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
             uint64_t millis = time_elapsed.count();
             *timeout_ms = (millis > *timeout_ms) ? 0 : *timeout_ms - millis;
 
@@ -480,7 +480,8 @@ bool CheckControlPropertyPerms(const std::string& name, const std::string& value
         property_info_area->GetPropertyInfo(control_string_legacy.c_str(), &target_context_legacy,
                                             &type_legacy);
 
-        if (CheckMacPerms(control_string_legacy, target_context_legacy, source_context.c_str(), cr)) {
+        if (CheckMacPerms(control_string_legacy, target_context_legacy, source_context.c_str(),
+                          cr)) {
             return true;
         }
     }
@@ -618,73 +619,75 @@ static void handle_property_set_fd(int fd) {
     }
 
     switch (cmd) {
-    case PROP_MSG_SETPROP: {
-        char prop_name[PROP_NAME_MAX];
-        char prop_value[PROP_VALUE_MAX];
+        case PROP_MSG_SETPROP: {
+            char prop_name[PROP_NAME_MAX];
+            char prop_value[PROP_VALUE_MAX];
 
-        if (!socket.RecvChars(prop_name, PROP_NAME_MAX, &timeout_ms) ||
-            !socket.RecvChars(prop_value, PROP_VALUE_MAX, &timeout_ms)) {
-          PLOG(ERROR) << "sys_prop(PROP_MSG_SETPROP): error while reading name/value from the socket";
-          return;
+            if (!socket.RecvChars(prop_name, PROP_NAME_MAX, &timeout_ms) ||
+                !socket.RecvChars(prop_value, PROP_VALUE_MAX, &timeout_ms)) {
+                PLOG(ERROR) << "sys_prop(PROP_MSG_SETPROP): error while reading name/value from "
+                               "the socket";
+                return;
+            }
+
+            prop_name[PROP_NAME_MAX - 1] = 0;
+            prop_value[PROP_VALUE_MAX - 1] = 0;
+
+            std::string source_context;
+            if (!socket.GetSourceContext(&source_context)) {
+                PLOG(ERROR) << "Unable to set property '" << prop_name << "': getpeercon() failed";
+                return;
+            }
+
+            const auto& cr = socket.cred();
+            std::string error;
+            auto result =
+                    HandlePropertySetNoSocket(prop_name, prop_value, source_context, cr, &error);
+            if (result != PROP_SUCCESS) {
+                LOG(ERROR) << "Unable to set property '" << prop_name << "' from uid:" << cr.uid
+                           << " gid:" << cr.gid << " pid:" << cr.pid << ": " << error;
+            }
+
+            break;
         }
 
-        prop_name[PROP_NAME_MAX-1] = 0;
-        prop_value[PROP_VALUE_MAX-1] = 0;
+        case PROP_MSG_SETPROP2: {
+            std::string name;
+            std::string value;
+            if (!socket.RecvString(&name, &timeout_ms) || !socket.RecvString(&value, &timeout_ms)) {
+                PLOG(ERROR) << "sys_prop(PROP_MSG_SETPROP2): error while reading name/value from "
+                               "the socket";
+                socket.SendUint32(PROP_ERROR_READ_DATA);
+                return;
+            }
 
-        std::string source_context;
-        if (!socket.GetSourceContext(&source_context)) {
-            PLOG(ERROR) << "Unable to set property '" << prop_name << "': getpeercon() failed";
-            return;
+            std::string source_context;
+            if (!socket.GetSourceContext(&source_context)) {
+                PLOG(ERROR) << "Unable to set property '" << name << "': getpeercon() failed";
+                socket.SendUint32(PROP_ERROR_PERMISSION_DENIED);
+                return;
+            }
+
+            // HandlePropertySet takes ownership of the socket if the set is handled asynchronously.
+            const auto& cr = socket.cred();
+            std::string error;
+            auto result = HandlePropertySet(name, value, source_context, cr, &socket, &error);
+            if (!result) {
+                // Result will be sent after completion.
+                return;
+            }
+            if (*result != PROP_SUCCESS) {
+                LOG(ERROR) << "Unable to set property '" << name << "' from uid:" << cr.uid
+                           << " gid:" << cr.gid << " pid:" << cr.pid << ": " << error;
+            }
+            socket.SendUint32(*result);
+            break;
         }
 
-        const auto& cr = socket.cred();
-        std::string error;
-        auto result = HandlePropertySetNoSocket(prop_name, prop_value, source_context, cr, &error);
-        if (result != PROP_SUCCESS) {
-            LOG(ERROR) << "Unable to set property '" << prop_name << "' from uid:" << cr.uid
-                       << " gid:" << cr.gid << " pid:" << cr.pid << ": " << error;
-        }
-
-        break;
-      }
-
-    case PROP_MSG_SETPROP2: {
-        std::string name;
-        std::string value;
-        if (!socket.RecvString(&name, &timeout_ms) ||
-            !socket.RecvString(&value, &timeout_ms)) {
-          PLOG(ERROR) << "sys_prop(PROP_MSG_SETPROP2): error while reading name/value from the socket";
-          socket.SendUint32(PROP_ERROR_READ_DATA);
-          return;
-        }
-
-        std::string source_context;
-        if (!socket.GetSourceContext(&source_context)) {
-            PLOG(ERROR) << "Unable to set property '" << name << "': getpeercon() failed";
-            socket.SendUint32(PROP_ERROR_PERMISSION_DENIED);
-            return;
-        }
-
-        // HandlePropertySet takes ownership of the socket if the set is handled asynchronously.
-        const auto& cr = socket.cred();
-        std::string error;
-        auto result = HandlePropertySet(name, value, source_context, cr, &socket, &error);
-        if (!result) {
-            // Result will be sent after completion.
-            return;
-        }
-        if (*result != PROP_SUCCESS) {
-            LOG(ERROR) << "Unable to set property '" << name << "' from uid:" << cr.uid
-                       << " gid:" << cr.gid << " pid:" << cr.pid << ": " << error;
-        }
-        socket.SendUint32(*result);
-        break;
-      }
-
-    default:
-        LOG(ERROR) << "sys_prop: invalid command " << cmd;
-        socket.SendUint32(PROP_ERROR_INVALID_CMD);
-        break;
+        default:
+            LOG(ERROR) << "sys_prop: invalid command " << cmd;
+            socket.SendUint32(PROP_ERROR_INVALID_CMD);
+            break;
     }
 }
 
@@ -1392,7 +1395,6 @@ static void ProcessKernelCmdline() {
         }
     });
 }
-
 
 static void ProcessBootconfig() {
     android::fs_mgr::ImportBootconfig([&](const std::string& key, const std::string& value) {

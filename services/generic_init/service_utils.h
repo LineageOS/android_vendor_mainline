@@ -43,7 +43,7 @@ enum ServiceCode : uint8_t {
 class Descriptor {
   public:
     Descriptor(const std::string& name, android::base::unique_fd fd)
-        : name_(name), fd_(std::move(fd)){};
+        : name_(name), fd_(std::move(fd)) {};
 
     // Publish() unsets FD_CLOEXEC from the FD and publishes its name via setenv().  It should be
     // called when starting a service after fork() and before exec().

@@ -39,28 +39,33 @@
 #include "service_utils.h"
 #include "subcontext.h"
 
-#define SVC_DISABLED 0x001        // do not autostart with class
-#define SVC_ONESHOT 0x002         // do not restart on exit
-#define SVC_RUNNING 0x004         // currently active
-#define SVC_RESTARTING 0x008      // waiting to restart
-#define SVC_CONSOLE 0x010         // requires console
-#define SVC_CRITICAL 0x020        // will reboot into bootloader if keeps crashing
-#define SVC_RESET 0x040           // Use when stopping a process,
+#define SVC_DISABLED 0x001    // do not autostart with class
+#define SVC_ONESHOT 0x002     // do not restart on exit
+#define SVC_RUNNING 0x004     // currently active
+#define SVC_RESTARTING 0x008  // waiting to restart
+#define SVC_CONSOLE 0x010     // requires console
+#define SVC_CRITICAL 0x020    // will reboot into bootloader if keeps crashing
+#define SVC_RESET \
+    0x040                         // Use when stopping a process,
                                   // but not disabling so it can be restarted with its class.
 #define SVC_RC_DISABLED 0x080     // Remember if the disabled flag was set in the rc script.
 #define SVC_RESTART 0x100         // Use to safely restart (stop, wait, start) a service.
 #define SVC_DISABLED_START 0x200  // A start was requested but it was disabled at the time.
-#define SVC_EXEC 0x400  // This service was started by either 'exec' or 'exec_start' and stops
-                        // init from processing more commands until it completes
+#define SVC_EXEC \
+    0x400  // This service was started by either 'exec' or 'exec_start' and stops
+           // init from processing more commands until it completes
 
-#define SVC_SHUTDOWN_CRITICAL 0x800  // This service is critical for shutdown and
-                                     // should not be killed during shutdown
-#define SVC_TEMPORARY 0x1000  // This service was started by 'exec' and should be removed from the
-                              // service list once it is reaped.
-#define SVC_GENTLE_KILL 0x2000  // This service should be stopped with SIGTERM instead of SIGKILL
-                                // Will still be SIGKILLed after timeout period of 200 ms
+#define SVC_SHUTDOWN_CRITICAL \
+    0x800  // This service is critical for shutdown and
+           // should not be killed during shutdown
+#define SVC_TEMPORARY \
+    0x1000  // This service was started by 'exec' and should be removed from the
+            // service list once it is reaped.
+#define SVC_GENTLE_KILL \
+    0x2000  // This service should be stopped with SIGTERM instead of SIGKILL
+            // Will still be SIGKILLed after timeout period of 200 ms
 
-#define NR_SVC_SUPP_GIDS 32    // thirty two supplementary groups
+#define NR_SVC_SUPP_GIDS 32  // thirty two supplementary groups
 
 namespace android {
 namespace init {
@@ -184,13 +189,13 @@ class Service {
     pid_t pid_;
     android::base::boot_clock::time_point time_started_;  // time of last start
     android::base::boot_clock::time_point time_crashed_;  // first crash within inspection window
-    int crash_count_;                     // number of times crashed within window
-    bool upgraded_mte_ = false;           // whether we upgraded async MTE -> sync MTE before
+    int crash_count_;                                     // number of times crashed within window
+    bool upgraded_mte_ = false;  // whether we upgraded async MTE -> sync MTE before
     std::chrono::minutes fatal_crash_window_ = 4min;  // fatal() when more than 4 crashes in it
     std::optional<std::string> fatal_reboot_target_;  // reboot target of fatal handler
     bool was_last_exit_ok_ =
             true;  // true if the service never exited, or exited with status code 0
-    bool shared_kallsyms_file_ = false; // pass the service a pre-opened fd to /proc/kallsyms
+    bool shared_kallsyms_file_ = false;  // pass the service a pre-opened fd to /proc/kallsyms
 
     std::optional<CapSet> capabilities_;
     ProcessAttributes proc_attr_;

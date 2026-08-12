@@ -330,7 +330,7 @@ void Service::Reap(const siginfo_t& siginfo) {
     }
 
     // Disabled and reset processes do not get restarted automatically.
-    if (flags_ & (SVC_DISABLED | SVC_RESET))  {
+    if (flags_ & (SVC_DISABLED | SVC_RESET)) {
         NotifyStateChange("stopped");
         return;
     }
@@ -440,7 +440,6 @@ void Service::DumpState() const {
         LOG(INFO) << "  file " << file.name;
     }
 }
-
 
 Result<void> Service::ExecStart() {
     auto reboot_on_failure = make_scope_guard([this] {
@@ -575,7 +574,7 @@ void Service::RunService(const std::vector<Descriptor>& descriptors,
     }
     cgroups_activated.Close();
     if (*byte != kCgroupsActivated) {
-        LOG(FATAL) << "Service '" << name_  << "' failed to start due to a fatal error";
+        LOG(FATAL) << "Service '" << name_ << "' failed to start due to a fatal error";
         _exit(EXIT_FAILURE);
     }
 
@@ -881,7 +880,7 @@ unique_fd Service::CreateSigchldFd() {
 void Service::OpenAndSaveStaticKallsymsFd() {
     Result<Descriptor> result = CreateSharedKallsymsFd();
     if (!result.ok()) {
-      LOG(ERROR) << result.error();
+        LOG(ERROR) << result.error();
     }
 }
 

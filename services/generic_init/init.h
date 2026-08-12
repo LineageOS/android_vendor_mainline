@@ -31,7 +31,7 @@ namespace init {
 Parser CreateParser(ActionManager& action_manager, ServiceList& service_list);
 Parser CreateApexConfigParser(ActionManager& action_manager, ServiceList& service_list);
 
-bool start_waiting_for_property(const char *name, const char *value);
+bool start_waiting_for_property(const char* name, const char* value);
 
 void DumpState();
 

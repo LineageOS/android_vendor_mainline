@@ -69,7 +69,8 @@ class Permissions {
 
 class SysfsPermissions : public Permissions {
   public:
-    friend void TestSysfsPermissions(const SysfsPermissions& expected, const SysfsPermissions& test);
+    friend void TestSysfsPermissions(const SysfsPermissions& expected,
+                                     const SysfsPermissions& test);
 
     SysfsPermissions(const std::string& name, const std::string& attribute, mode_t perm, uid_t uid,
                      gid_t gid, bool no_fnm_pathname);
@@ -171,7 +172,7 @@ class DeviceHandler : public UeventHandler {
     bool FindNvmeDevice(const std::string& path, std::string* nvme_device_path) const;
     bool FindScsiDevice(const std::string& path, std::string* scsi_device_path) const;
     std::tuple<mode_t, uid_t, gid_t> GetDevicePermissions(
-        const std::string& path, const std::vector<std::string>& links) const;
+            const std::string& path, const std::vector<std::string>& links) const;
     void MakeDevice(const std::string& path, bool block, int major, int minor,
                     const std::vector<std::string>& links) const;
     std::vector<std::string> GetBlockDeviceSymlinks(const Uevent& uevent) const;
