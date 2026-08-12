@@ -113,6 +113,7 @@ libgeneric_init_cc_defaults {
         "-DREBOOT_BOOTLOADER_ON_PANIC=0",
         "-DSHUTDOWN_ZERO_TIMEOUT=0",
         "-DWORLD_WRITABLE_KMSG=0",
+        "-DHAVE_LIBUNWIND",
         "-Wall",
         "-Werror",
         "-Wextra",
@@ -282,26 +283,9 @@ cc_binary {
     ],
 }
 
-/*
-soong_config_module_type {
-    name: "init_first_stage_cc_defaults",
-    module_type: "cc_defaults",
-    config_namespace: "ANDROID",
-    bool_variables: ["BOARD_USES_RECOVERY_AS_BOOT"],
-    properties: ["no_full_install"],
-}
-
-// Do not install init_first_stage even with mma if we're system-as-root.
-// Otherwise, it will overwrite the symlink.
-init_first_stage_cc_defaults {
-    name: "init_first_stage_defaults",
-    soong_config_variables: {
-        BOARD_USES_RECOVERY_AS_BOOT: {
-            no_full_install: true,
-        },
-    },
-
-    stem: "init",
+cc_defaults {
+    name: "generic_init_first_stage_defaults",
+    stem: "generic_init",
 
     srcs: [
         "block_dev_initializer.cpp",
@@ -316,6 +300,25 @@ init_first_stage_cc_defaults {
         "service_utils.cpp",
         "switch_root.cpp",
         "uevent_listener.cpp",
+        "util.cpp",
+    ] + [
+        "coldboot.cpp",
+        "coldboot_runner_noparallel.cpp",
+        "coldboot_runner_subprocess.cpp",
+        "coldboot_runner_thread_pool.cpp",
+        "devices.cpp",
+        "dynamic_mount_handler.cpp",
+        "dynamic_mount_helpers.cpp",
+        "firmware_handler.cpp",
+        "import_parser.cpp",
+        "modalias_handler.cpp",
+        "parser.cpp",
+        "thread_pool.cpp",
+        "tokenizer.cpp",
+        "uevent_dependency_graph.cpp",
+        "uevent_listener.cpp",
+        "ueventd.cpp",
+        "ueventd_parser.cpp",
         "util.cpp",
     ],
 
@@ -335,13 +338,19 @@ init_first_stage_cc_defaults {
         "libselinux",
         "libcap",
         "liblzma",
-        "libunwindstack_no_dex",
         "libmodprobe",
         "libext2_uuid",
         "libz",
         "libprocinfo",
         "libbootloader_message",
+    ] + [
+        "libinit_flags",
+        "libueventd_flags",
     ],
+    proto: {
+        type: "lite",
+        export_proto_headers: true,
+    },
 
     header_libs: [
         "libupdate_engine_headers",
@@ -357,7 +366,7 @@ init_first_stage_cc_defaults {
         "-Wall",
         "-Wextra",
         "-Wno-unused-parameter",
-        "-Wexit-time-destructors",
+        "-Wno-exit-time-destructors",
         "-Werror",
         "-DALLOW_FIRST_STAGE_CONSOLE=0",
         "-DALLOW_LOCAL_PROP_OVERRIDE=0",
@@ -411,13 +420,11 @@ init_first_stage_cc_defaults {
     },
 
     ramdisk: true,
-
-    install_in_root: true,
 }
 
 cc_binary {
-    name: "init_first_stage",
-    defaults: ["init_first_stage_defaults"],
+    name: "generic_init_first_stage",
+    defaults: ["generic_init_first_stage_defaults"],
     srcs: [
         "first_stage_mount_android.cpp",
         "snapuserd_transition.cpp",
@@ -433,4 +440,3 @@ cc_binary {
         "update_metadata-protos",
     ],
 }
-*/

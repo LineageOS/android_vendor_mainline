@@ -28,7 +28,9 @@
 #include <android-base/strings.h>
 #include <cutils/android_reboot.h>
 #include <fs_mgr.h>
+#ifdef HAVE_LIBUNWIND
 #include <unwindstack/AndroidUnwinder.h>
+#endif
 
 #include "capabilities.h"
 #include "ota_utils.h"
@@ -171,6 +173,7 @@ void __attribute__((noreturn)) InitFatalReboot(int signal_number) {
 
     // In the parent, let's try to get a backtrace then shutdown.
     LOG(ERROR) << __FUNCTION__ << ": signal " << signal_number;
+#ifdef HAVE_LIBUNWIND
     unwindstack::AndroidLocalUnwinder unwinder;
     unwindstack::AndroidUnwinderData data;
     if (!unwinder.Unwind(data)) {
@@ -179,6 +182,7 @@ void __attribute__((noreturn)) InitFatalReboot(int signal_number) {
     for (const auto& frame : data.frames) {
         LOG(ERROR) << unwinder.FormatFrame(frame);
     }
+#endif
     if (init_fatal_panic) {
         LOG(ERROR) << __FUNCTION__ << ": Trigger crash";
         android::base::WriteStringToFile("c", PROC_SYSRQ);

@@ -226,7 +226,9 @@ int ueventd_main(const UeventdConfiguration& ueventd_configuration, bool first_r
 
     LOG(INFO) << "generic_init ueventd started!";
 
+#ifdef INIT_FULL_SOURCES
     SelinuxSetupKernelLogging();
+#endif
     SelabelInitialize();
 
     std::string tmp;

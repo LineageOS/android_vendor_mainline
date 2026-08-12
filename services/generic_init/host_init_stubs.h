@@ -45,12 +45,6 @@ inline bool CanReadProperty(const std::string&, const std::string&) {
     return true;
 }
 
-// reboot_utils.h
-inline void SetFatalRebootTarget(const std::optional<std::string>& = std::nullopt) {}
-inline void __attribute__((noreturn)) InitFatalReboot(int signal_number) {
-    abort();
-}
-
 // selabel.h
 inline void SelabelInitialize() {}
 inline bool SelabelLookupFileContext(const std::string&, int, std::string*) {

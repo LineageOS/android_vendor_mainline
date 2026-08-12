@@ -642,12 +642,14 @@ Result<std::string> ParseUmountAll(const std::vector<std::string>& args) {
 }
 
 static void InitAborter(const char* abort_message) {
+#ifdef HAVE_LIBUNWIND
     // When init forks, it continues to use this aborter for LOG(FATAL), but we want children to
     // simply abort instead of trying to reboot the system.
     if (getpid() != 1) {
         android::base::DefaultAborter(abort_message);
         return;
     }
+#endif
 
     InitFatalReboot(SIGABRT);
 }
