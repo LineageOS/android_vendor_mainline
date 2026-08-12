@@ -82,7 +82,7 @@ init_device_sources = [
 ]
 
 soong_config_module_type {
-    name: "libinit_cc_defaults",
+    name: "libgeneric_init_cc_defaults",
     module_type: "cc_defaults",
     config_namespace: "ANDROID",
     bool_variables: [
@@ -95,8 +95,8 @@ soong_config_module_type {
     ],
 }
 
-libinit_cc_defaults {
-    name: "init_defaults",
+libgeneric_init_cc_defaults {
+    name: "generic_init_defaults",
     sanitize: {
         misc_undefined: ["signed-integer-overflow"],
     },
@@ -207,10 +207,10 @@ libinit_cc_defaults {
 }
 
 cc_defaults {
-    name: "libinit_defaults",
+    name: "libgeneric_init_defaults",
     recovery_available: true,
     defaults: [
-        "init_defaults",
+        "generic_init_defaults",
         "selinux_policy_version",
     ],
     srcs: init_common_sources + init_device_sources,
@@ -249,22 +249,21 @@ cc_defaults {
 }
 
 cc_library_static {
-    name: "libinit",
-    defaults: ["libinit_defaults"],
+    name: "libgeneric_init",
+    defaults: ["libgeneric_init_defaults"],
 }
 
 cc_defaults {
-    name: "init_second_stage_defaults",
-    stem: "init",
-    defaults: ["init_defaults"],
+    name: "generic_init_second_stage_defaults",
+    stem: "generic_init",
+    defaults: ["generic_init_defaults"],
     srcs: ["main.cpp"],
-    symlinks: ["ueventd"],
 }
 
 cc_binary {
-    name: "init_second_stage.recovery",
-    defaults: ["init_second_stage_defaults"],
-    static_libs: ["libinit"],
+    name: "generic_init_second_stage.recovery",
+    defaults: ["generic_init_second_stage_defaults"],
+    static_libs: ["libgeneric_init"],
     recovery: true,
     cflags: ["-DRECOVERY"],
     exclude_static_libs: [
@@ -281,6 +280,7 @@ cc_binary {
     ],
 }
 
+/*
 soong_config_module_type {
     name: "init_first_stage_cc_defaults",
     module_type: "cc_defaults",
@@ -431,3 +431,4 @@ cc_binary {
         "update_metadata-protos",
     ],
 }
+*/
