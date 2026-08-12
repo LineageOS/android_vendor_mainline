@@ -82,37 +82,6 @@ static void LoadFirmware(const std::string& firmware, const std::string& root, i
     WriteFully(loading_fd, response, strlen(response));
 }
 
-static bool IsBooting() {
-    return access("/dev/.booting", F_OK) == 0;
-}
-
-static bool WaitForApexActivated() {
-    static bool apex_activated = []() {
-        // Wait for com.android.runtime.apex activation
-        // Property name and value must be kept in sync with system/apexd/apex/apex_constants.h
-        // 60s is the default firmware sysfs fallback timeout. (/sys/class/firmware/timeout)
-        if (!WaitForProperty("apexd.status", "activated", 60s)) {
-            LOG(ERROR) << "Apexd activation wait timeout";
-            return false;
-        }
-        return true;
-    }();
-
-    return apex_activated;
-}
-
-static bool NeedsRerunExternalHandler() {
-    thread_local bool first = true;
-
-    // Rerun external handler only on the first try and when apex is activated
-    if (first) {
-        first = false;
-        return WaitForApexActivated();
-    }
-
-    return first;
-}
-
 ExternalFirmwareHandler::ExternalFirmwareHandler(std::string devpath, uid_t uid, gid_t gid,
                                                  std::string handler_path)
     : devpath(std::move(devpath)), uid(uid), gid(gid), handler_path(std::move(handler_path)) {
@@ -159,11 +128,6 @@ std::string FirmwareHandler::GetFirmwarePath(const Uevent& uevent) const {
 
             auto result = RunExternalHandler(external_handler.handler_path, external_handler.uid,
                                              external_handler.gid, envs_map);
-            if (!result.ok() && NeedsRerunExternalHandler()) {
-                auto res = RunExternalHandler(external_handler.handler_path, external_handler.uid,
-                                              external_handler.gid, envs_map);
-                result = std::move(res);
-            }
             if (!result.ok()) {
                 LOG(ERROR) << "Using default firmware; External firmware handler failed: "
                            << result.error();
@@ -222,30 +186,9 @@ void FirmwareHandler::ProcessFirmwareEvent(const std::string& path, const std::s
         return true;
     };
 
-    while (true) {
-        if (ForEachFirmwareDirectory(TryLoadFirmware)) {
-            LOG(INFO) << "loading " << path << " took " << t;
-            return;
-        }
-
-        // If we're not fully booted, we may be missing
-        // filesystems needed for firmware, wait and retry.
-        if (!IsBooting()) {
-            break;
-        }
-
-        std::this_thread::sleep_for(100ms);
-        if (in_thread_pool) {
-            // If this is executed in a thread pool, retry in a detached thread to avoid deadlock;
-            // coldboot waits for the thread pool to be empty and this firmware handling may
-            // continue until /dev/.booting is removed, which happens at late-init, causing a
-            // possible deadlock (cf. b/441001521)
-            std::thread([path, firmware, t, this] {
-                ProcessFirmwareEvent(path, firmware, /*in_thread_pool=*/false, t);
-            }).detach();
-            return;
-        }
-        attempted_paths_and_errors.clear();
+    if (ForEachFirmwareDirectory(TryLoadFirmware)) {
+        LOG(INFO) << "loading " << path << " took " << t;
+        return;
     }
 
     LOG(ERROR) << "firmware: could not find firmware for " << firmware;

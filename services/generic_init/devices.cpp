@@ -15,6 +15,7 @@
  */
 
 #include "devices.h"
+#include "dynamic_mount_handler.h"
 
 #include <errno.h>
 #include <fnmatch.h>
@@ -450,7 +451,7 @@ void DeviceHandler::MakeDevice(const std::string& path, bool block, int major, i
     std::string secontext;
     if (!SelabelLookupFileContextBestMatch(path, links, mode, &secontext)) {
         PLOG(ERROR) << "Device '" << path << "' not created; cannot find SELinux label";
-        return;
+        // return;
     }
     if (!secontext.empty()) {
         setfscreatecon(secontext.c_str());
@@ -470,20 +471,22 @@ void DeviceHandler::MakeDevice(const std::string& path, bool block, int major, i
     }
     /* If the node already exists update its SELinux label and the file mode to handle cases when
      * it was created with the wrong context and file mode during coldboot procedure. */
-    if (mknod(path.c_str(), mode, dev) && (errno == EEXIST) && !secontext.empty()) {
-        char* fcon = nullptr;
-        int rc = lgetfilecon(path.c_str(), &fcon);
-        if (rc < 0) {
-            PLOG(ERROR) << "Cannot get SELinux label on '" << path << "' device";
-            goto out;
-        }
+    if (mknod(path.c_str(), mode, dev) && (errno == EEXIST)) {
+        if (!secontext.empty()) {
+            char* fcon = nullptr;
+            int rc = lgetfilecon(path.c_str(), &fcon);
+            if (rc < 0) {
+                PLOG(ERROR) << "Cannot get SELinux label on '" << path << "' device";
+                goto out;
+            }
 
-        bool different = fcon != secontext;
-        freecon(fcon);
+            bool different = fcon != secontext;
+            freecon(fcon);
 
-        if (different && lsetfilecon(path.c_str(), secontext.c_str())) {
-            PLOG(ERROR) << "Cannot set '" << secontext << "' SELinux label on '" << path
-                        << "' device";
+            if (different && lsetfilecon(path.c_str(), secontext.c_str())) {
+                PLOG(ERROR) << "Cannot set '" << secontext << "' SELinux label on '" << path
+                            << "' device";
+            }
         }
 
         struct stat s;
@@ -618,9 +621,12 @@ static void RemoveDeviceMapperLinks(const std::string& devpath) {
     }
 }
 
-void DeviceHandler::HandleDevice(const std::string& action, const std::string& devpath, bool block,
-                                 int major, int minor,
+void DeviceHandler::HandleDevice(const Uevent& uevent, const std::string& devpath, bool block,
                                  const std::vector<std::string>& links) const {
+    const std::string& action = uevent.action;
+    const int& major = uevent.major;
+    const int& minor = uevent.minor;
+
     if (action == "add") {
         MakeDevice(devpath, block, major, minor, links);
     }
@@ -684,6 +690,10 @@ void DeviceHandler::HandleDevice(const std::string& action, const std::string& d
             }
         }
         unlink(devpath.c_str());
+    }
+
+    if (block && action == "add") {
+        DynamicMountHandler::OnBlockDeviceAdd(uevent, devpath, links);
     }
 }
 
@@ -768,8 +778,7 @@ void DeviceHandler::HandleBindInternal(std::string driver_name, std::string acti
 
         std::string devpath = driver->ParseDevPath(tracked.uevent);
         mkdir_recursive(Dirname(devpath), 0755);
-        HandleDevice(action, devpath, false, tracked.uevent.major, tracked.uevent.minor,
-                     std::vector<std::string>{});
+        HandleDevice(tracked.uevent, devpath, false, std::vector<std::string>{});
     }
 }
 
@@ -844,7 +853,7 @@ void DeviceHandler::HandleUevent(const Uevent& uevent) {
 
     mkdir_recursive(Dirname(devpath), 0755);
 
-    HandleDevice(uevent.action, devpath, block, uevent.major, uevent.minor, links);
+    HandleDevice(uevent, devpath, block, links);
 
     // Duplicate /dev/ashmem device and name it /dev/ashmem<boot_id>.
     // TODO(b/111903542): remove once all users of /dev/ashmem are migrated to libcutils API.

@@ -49,6 +49,7 @@ init_device_sources = [
     "bootchart.cpp",
     "builtins.cpp",
     "coldboot.cpp",
+    "coldboot_runner_noparallel.cpp",
     "coldboot_runner_subprocess.cpp",
     "coldboot_runner_thread_pool.cpp",
     "devices.cpp",
@@ -273,6 +274,8 @@ cc_binary {
         "libutils",
     ],
     srcs: [
+        "dynamic_mount_handler.cpp",
+        "dynamic_mount_helpers.cpp",
         "first_stage_init.cpp",
         "first_stage_mount.cpp",
         "first_stage_mount_android.cpp",

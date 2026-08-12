@@ -190,7 +190,8 @@ void UeventListener::RegenerateUevents(const ListenerCallback& callback) const {
 }
 
 void UeventListener::Poll(const ListenerCallback& callback,
-                          const std::optional<std::chrono::milliseconds> relative_timeout) const {
+                          const std::optional<std::chrono::milliseconds> relative_timeout,
+                          const bool reset_start_time_on_uevent) const {
     using namespace std::chrono;
 
     pollfd ufd = {
@@ -228,6 +229,7 @@ void UeventListener::Poll(const ListenerCallback& callback,
                 // Skip processing the uevent if it is invalid.
                 if (result == ReadUeventResult::kInvalid) continue;
                 if (callback(uevent) == ListenerAction::kStop) return;
+                if (reset_start_time_on_uevent) start_time = steady_clock::now();
             }
         }
     }

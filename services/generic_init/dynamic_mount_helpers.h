@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 The Android Open Source Project
+ * Copyright (C) 2017 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-#include "ueventd_parser.h"
+#include <fstab/fstab.h>
 
-#ifndef _INIT_UEVENTD_H_
-#define _INIT_UEVENTD_H_
+namespace DynamicMountHelpers {
 
-namespace android {
-namespace init {
+using namespace ::android::fs_mgr;
 
-int ueventd_main(int argc, char** argv);
-int ueventd_main(const UeventdConfiguration& ueventd_configuration, bool first_run);
+bool TryAccessDir(const std::string& path);
+bool TryAccessFile(const std::string& path);
 
-}  // namespace init
-}  // namespace android
+bool MountPartition(Fstab& fstab_, const Fstab::iterator& begin, bool erase_same_mounts,
+                    Fstab::iterator* end = nullptr);
 
-#endif
+bool MountPartitions(Fstab& fstab_);
+
+bool TrySwitchSystemAsRoot(Fstab& fstab_);
+
+}  // namespace DynamicMountHelpers

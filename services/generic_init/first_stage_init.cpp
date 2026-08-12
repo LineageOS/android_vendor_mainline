@@ -38,12 +38,14 @@
 #include <android-base/logging.h>
 #include <android-base/stringify.h>
 #include <android-base/stringprintf.h>
+#include <android-base/strings.h>
 #include <android/avf_cc_flags.h>
 #include <fs_mgr.h>
 #include <modprobe/modprobe.h>
 #include <private/android_filesystem_config.h>
 
 #include "debug_ramdisk.h"
+#include "dynamic_mount_handler.h"
 #include "first_stage_console.h"
 #include "first_stage_mount.h"
 #include "ota_utils.h"
@@ -53,6 +55,8 @@
 #include "snapuserd_transition.h"
 #endif
 #include "switch_root.h"
+#include "ueventd.h"
+#include "ueventd_parser.h"
 #include "util.h"
 
 using android::base::boot_clock;
@@ -60,6 +64,8 @@ using android::base::boot_clock;
 using namespace std::literals;
 
 namespace fs = std::filesystem;
+
+bool use_first_stage_mount = false;
 
 namespace android {
 namespace init {
@@ -185,7 +191,47 @@ constexpr std::string_view GetPageSizeSuffix(std::string_view dirname) {
     return "";
 }
 
+void ExecuteVendorInitProgram(BootMode boot_mode) {
+    const char* path;
+    if (boot_mode == BootMode::RECOVERY_MODE) {
+        path = "/system/bin/vendor_init";
+    } else {
+        path = "/vendor/bin/vendor_init";
+    }
+    const char* args[] = {path, nullptr};
+
+    if (access(path, F_OK) != 0) return;
+    ForkExecveAndWaitForCompletion(path, const_cast<char**>(args));
+}
+
 }  // namespace
+
+std::vector<std::string> GetModulesToLoad(const std::string& module_base_dir,
+                                          const std::string& module_load_list) {
+    std::string prefix_list_path = module_base_dir + "/" + module_load_list + "_prefix";
+    std::string prefix_list_buf;
+    std::vector<std::string> prefix_list;
+    std::vector<std::string> result;
+
+    if (!android::base::ReadFileToString(prefix_list_path, &prefix_list_buf)) return result;
+    prefix_list = android::base::Split(prefix_list_buf, "\n");
+    if (prefix_list.empty()) return result;
+
+    for (const auto& entry : fs::directory_iterator(module_base_dir)) {
+        std::string filename = entry.path().filename();
+        if (!android::base::EndsWith(filename, ".ko")) continue;
+        for (const auto& prefix : prefix_list) {
+            if (prefix.empty()) continue;
+            if (android::base::StartsWith(filename, prefix)) {
+                LOG(INFO) << "Add kernel module " << filename
+                          << " to load list based on prefix match: " << prefix;
+                result.push_back(filename);
+            }
+        }
+    }
+
+    return result;
+}
 
 std::string GetModuleLoadList(BootMode boot_mode, const std::string& dir_path) {
     std::string module_load_file;
@@ -214,10 +260,11 @@ std::string GetModuleLoadList(BootMode boot_mode, const std::string& dir_path) {
     return module_load_file;
 }
 
-#define MODULE_BASE_DIR "/lib/modules"
-bool LoadKernelModules(BootMode boot_mode, bool want_console,
+bool LoadKernelModules(BootMode boot_mode, bool strict,
                        Modprobe::LoadParallelMode want_parallel_mode, bool want_parallel_test,
-                       int& modules_loaded) {
+                       const std::string& module_base_dir) {
+    boot_clock::time_point module_start_time = boot_clock::now();
+    int modules_loaded = 0;
     struct utsname uts{};
     if (uname(&uts)) {
         LOG(FATAL) << "Failed to get kernel version.";
@@ -227,7 +274,7 @@ bool LoadKernelModules(BootMode boot_mode, bool want_console,
         LOG(FATAL) << "Failed to parse kernel version " << uts.release;
     }
 
-    std::unique_ptr<DIR, decltype(&closedir)> base_dir(opendir(MODULE_BASE_DIR), closedir);
+    std::unique_ptr<DIR, decltype(&closedir)> base_dir(opendir(module_base_dir.c_str()), closedir);
     if (!base_dir) {
         LOG(INFO) << "Unable to open /lib/modules, skipping module loading.";
         return true;
@@ -272,10 +319,14 @@ bool LoadKernelModules(BootMode boot_mode, bool want_console,
     std::sort(module_dirs.begin(), module_dirs.end());
 
     for (const auto& module_dir : module_dirs) {
-        std::string dir_path = MODULE_BASE_DIR "/";
+        std::string dir_path = module_base_dir + "/";
         dir_path.append(module_dir);
-        Modprobe m({dir_path}, GetModuleLoadList(boot_mode, dir_path));
-        bool retval = m.LoadListedModules(!want_console);
+        auto module_dir_module_load_list = GetModuleLoadList(boot_mode, dir_path);
+        Modprobe m({dir_path}, module_dir_module_load_list);
+        for (const auto& mod : GetModulesToLoad(module_base_dir, module_dir_module_load_list)) {
+            m.LoadWithAliases(mod, strict);
+        }
+        bool retval = m.LoadListedModules(strict);
         modules_loaded = m.GetModuleCount();
         if (modules_loaded > 0) {
             LOG(INFO) << "Loaded " << modules_loaded << " modules from " << dir_path;
@@ -283,14 +334,22 @@ bool LoadKernelModules(BootMode boot_mode, bool want_console,
         }
     }
 
-    Modprobe m({MODULE_BASE_DIR}, GetModuleLoadList(boot_mode, MODULE_BASE_DIR));
+    auto module_load_list = GetModuleLoadList(boot_mode, module_base_dir);
+    Modprobe m({module_base_dir}, module_load_list);
+    for (const auto& mod : GetModulesToLoad(module_base_dir, module_load_list)) {
+        m.LoadWithAliases(mod, strict);
+    }
     bool retval = (want_parallel_mode != Modprobe::LoadParallelMode::NONE)
                           ? m.LoadModulesParallel(std::thread::hardware_concurrency(),
                                                   want_parallel_mode, want_parallel_test)
-                          : m.LoadListedModules(!want_console);
+                          : m.LoadListedModules(strict);
     modules_loaded = m.GetModuleCount();
     if (modules_loaded > 0) {
-        LOG(INFO) << "Loaded " << modules_loaded << " modules from " << MODULE_BASE_DIR;
+        auto module_elapse_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                boot_clock::now() - module_start_time);
+        setenv(kEnvInitModuleDurationMs, std::to_string(module_elapse_time.count()).c_str(), 1);
+        LOG(INFO) << "Loaded " << modules_loaded << " kernel modules"
+                  << " from " << module_base_dir << " took " << module_elapse_time.count() << " ms";
     }
     return retval;
 }
@@ -345,11 +404,11 @@ int FirstStageMain(int argc, char** argv) {
     // Clear the umask.
     umask(0);
 
-    CHECKCALL(clearenv());
     CHECKCALL(setenv("PATH", _PATH_DEFPATH, 1));
     // Get the basic filesystem setup we need put together in the initramdisk
     // on / and then we'll let the rc file figure out the rest.
     CHECKCALL(mount("tmpfs", "/dev", "tmpfs", MS_NOSUID, "mode=0755"));
+    CHECKCALL(mkdir("/dev/block", 0755));
     CHECKCALL(mkdir("/dev/pts", 0755));
     CHECKCALL(mkdir("/dev/socket", 0755));
     CHECKCALL(mkdir("/dev/dm-user", 0755));
@@ -410,7 +469,6 @@ int FirstStageMain(int argc, char** argv) {
     }
 #undef CHECKCALL
 
-    SetStdioToDevNull(argv);
     // Now that tmpfs is mounted on /dev and we have /dev/kmsg, we can actually
     // talk to the outside world...
     InitKernelLogging(argv);
@@ -422,7 +480,7 @@ int FirstStageMain(int argc, char** argv) {
         LOG(FATAL) << "Init encountered errors starting first stage, aborting";
     }
 
-    LOG(INFO) << "init first stage started!";
+    LOG(INFO) << "generic init first stage started!";
 
     auto old_root_dir = std::unique_ptr<DIR, decltype(&closedir)>{opendir("/"), closedir};
     if (!old_root_dir) {
@@ -451,39 +509,29 @@ int FirstStageMain(int argc, char** argv) {
         want_parallel_test = true;
 
     boot_clock::time_point module_start_time = boot_clock::now();
-    int module_count = 0;
     BootMode boot_mode = GetBootMode(cmdline, bootconfig);
-    if (!LoadKernelModules(boot_mode, want_console, want_parallel_mode, want_parallel_test,
-                           module_count)) {
-        if (want_console != FirstStageConsoleParam::DISABLED) {
-            LOG(ERROR) << "Failed to load kernel modules, starting console";
-        } else {
-            LOG(FATAL) << "Failed to load kernel modules";
-        }
-    }
-    if (module_count > 0) {
-        auto module_elapse_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-                boot_clock::now() - module_start_time);
-        setenv(kEnvInitModuleDurationMs, std::to_string(module_elapse_time.count()).c_str(), 1);
-        LOG(INFO) << "Loaded " << module_count << " kernel modules took "
-                  << module_elapse_time.count() << " ms";
+    if (!LoadKernelModules(boot_mode, false, want_parallel_mode, want_parallel_test,
+                           "/lib/modules")) {
+        LOG(ERROR) << "Failed to load kernel modules from ramdisk";
     }
 
     MaybeResumeFromHibernation(bootconfig);
 
     std::unique_ptr<FirstStageMount> fsm;
-
-    bool created_devices = false;
-    if (want_console == FirstStageConsoleParam::CONSOLE_ON_FAILURE) {
+    bool fsm_created_devices = false;
+    if (use_first_stage_mount) {
         if (!IsRecoveryMode()) {
             fsm = CreateFirstStageMount(cmdline);
             if (fsm) {
-                created_devices = fsm->DoCreateDevices();
-                if (!created_devices) {
+                fsm_created_devices = fsm->DoCreateDevices();
+                if (!fsm_created_devices) {
                     LOG(ERROR) << "Failed to create device nodes early";
                 }
             }
         }
+    }
+
+    if (want_console == FirstStageConsoleParam::IGNORE_FAILURE) {
         StartConsole(cmdline);
     }
 
@@ -521,35 +569,77 @@ int FirstStageMain(int argc, char** argv) {
         setenv("INIT_FORCE_DEBUGGABLE", "true", 1);
     }
 
-    if (ForceNormalBoot(cmdline, bootconfig)) {
-        mkdir("/first_stage_ramdisk", 0755);
-        PrepareSwitchRoot();
-        // SwitchRoot() must be called with a mount point as the target, so we bind mount the
-        // target directory to itself here.
-        if (mount("/first_stage_ramdisk", "/first_stage_ramdisk", nullptr, MS_BIND, nullptr) != 0) {
-            PLOG(FATAL) << "Could not bind mount /first_stage_ramdisk to itself";
+    if (use_first_stage_mount) {
+        if (ForceNormalBoot(cmdline, bootconfig)) {
+            mkdir("/first_stage_ramdisk", 0755);
+            PrepareSwitchRoot();
+            // SwitchRoot() must be called with a mount point as the target, so we bind mount the
+            // target directory to itself here.
+            if (mount("/first_stage_ramdisk", "/first_stage_ramdisk", nullptr, MS_BIND, nullptr) !=
+                0) {
+                PLOG(FATAL) << "Could not bind mount /first_stage_ramdisk to itself";
+            }
+            SwitchRoot("/first_stage_ramdisk");
         }
-        SwitchRoot("/first_stage_ramdisk");
-    }
 
-    if (IsRecoveryMode()) {
-        LOG(INFO) << "First stage mount skipped (recovery mode)";
+        if (IsRecoveryMode()) {
+            LOG(INFO) << "First stage mount skipped (recovery mode)";
+        } else {
+            if (!fsm) {
+                fsm = CreateFirstStageMount(cmdline);
+            }
+            if (!fsm) {
+                LOG(FATAL) << "FirstStageMount not available";
+            }
+
+            if (!fsm_created_devices && !fsm->DoCreateDevices()) {
+                LOG(FATAL) << "Failed to create devices required for first stage mount";
+            } else if (REBOOT_BOOTLOADER_ON_PANIC && !AttemptingToBootNewSlot()) {
+                InstallRebootSignalHandlers();
+            }
+
+            if (!fsm->DoFirstStageMount()) {
+                LOG(FATAL) << "Failed to mount required partitions early ...";
+            }
+        }
+
+        ExecuteVendorInitProgram(boot_mode);
     } else {
-        if (!fsm) {
-            fsm = CreateFirstStageMount(cmdline);
-        }
-        if (!fsm) {
-            LOG(FATAL) << "FirstStageMount not available";
-        }
+        if (boot_mode == BootMode::RECOVERY_MODE) {
+            DynamicMountHandler::OnPreBlockDevices();
+            ueventd_main(ParseConfig({"/system/etc/ueventd.rc"}), true);
+            DynamicMountHandler::OnPostBlockDevices(true);
+            ExecuteVendorInitProgram(boot_mode);
+        } else {
+            // Create the temporary mount directories, and parse mount configuration
+            DynamicMountHandler::OnPreBlockDevices();
 
-        if (!created_devices && !fsm->DoCreateDevices()) {
-            LOG(FATAL) << "Failed to create devices required for first stage mount";
-        } else if (REBOOT_BOOTLOADER_ON_PANIC && !AttemptingToBootNewSlot()) {
-            InstallRebootSignalHandlers();
-        }
+            // Load kernel modules, create devices, and parse partitions, until ready
+            ueventd_main(ParseConfig({"/system/etc/ueventd.ramdisk.rc"}), true);
 
-        if (!fsm->DoFirstStageMount()) {
-            LOG(FATAL) << "Failed to mount required partitions early ...";
+            mkdir("/first_stage_ramdisk", 0755);
+            PrepareSwitchRoot();
+            // SwitchRoot() must be called with a mount point as the target, so we bind mount the
+            // target directory to itself here.
+            if (mount("/first_stage_ramdisk", "/first_stage_ramdisk", nullptr, MS_BIND, nullptr) !=
+                0) {
+                PLOG(FATAL) << "Could not bind mount /first_stage_ramdisk to itself";
+            }
+            SwitchRoot("/first_stage_ramdisk");
+
+            // Mount partitions
+            DynamicMountHandler::OnPostBlockDevices();
+
+            ExecuteVendorInitProgram(boot_mode);
+
+            // Load kernel modules listed on modules.load from vendor partition
+            if (!LoadKernelModules(boot_mode, false, want_parallel_mode, want_parallel_test,
+                                   "/vendor/lib/modules")) {
+                LOG(ERROR) << "Failed to load kernel modules from vendor partition";
+            }
+
+            // Run ueventd with normal boot configuration, until there's no new uevents
+            ueventd_main(ParseConfig({"/system/etc/ueventd.rc"}), false);
         }
     }
 
@@ -586,6 +676,7 @@ int FirstStageMain(int argc, char** argv) {
     // are inherited beyond exec.
     setenv("HWASAN_OPTIONS", STRINGIFY(HWASAN_OPTIONS), true);
 #endif
+    SetStdioToDevNull(argv);
     execv(path, const_cast<char**>(args));
 
     // execv() only returns if an error happened, in which case we
