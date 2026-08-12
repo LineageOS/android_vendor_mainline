@@ -50,7 +50,7 @@
 #include "service_list.h"
 #include "util.h"
 
-#if defined(__BIONIC__)
+#if defined(__BIONIC__) && defined(HAVE_INVISIBLE_MODULES)
 #include <bionic/reserved_signals.h>
 #endif
 
@@ -137,7 +137,7 @@ static bool ExpandArgsAndExecv(const std::vector<std::string>& args, bool sigsto
         kill(getpid(), SIGSTOP);
     }
 
-#if defined(__BIONIC__)
+#if defined(__BIONIC__) && defined(HAVE_INVISIBLE_MODULES)
     if (com::android::init::flags::ignore_bionic_signal_profiler_before_exec()) {
         // The below execv will remove the signal handler for BIONIC_SIGNAL_PROFILER and revert to
         // the default behavior, which is to kill the process. This means there is a race, where if
@@ -344,7 +344,7 @@ void Service::Reap(const siginfo_t& siginfo) {
             mount_namespace_.has_value() && *mount_namespace_ == NS_DEFAULT;
     const bool is_process_updatable = use_default_mount_ns && is_apex_updatable;
 
-#if defined(__BIONIC__) && defined(SEGV_MTEAERR)
+#if defined(__BIONIC__) && defined(SEGV_MTEAERR) && defined(HAVE_INVISIBLE_MODULES)
     // As a precaution, we only upgrade a service once per reboot, to limit
     // the potential impact.
     //

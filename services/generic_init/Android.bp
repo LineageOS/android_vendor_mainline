@@ -199,7 +199,6 @@ libgeneric_init_cc_defaults {
         "libvendorsupport",
     ],
     header_libs: [
-        "bionic_libc_platform_headers",
         "libupdate_engine_headers",
     ],
     bootstrap: true,
