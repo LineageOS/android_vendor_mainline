@@ -85,7 +85,7 @@ static pid_t SpawnImage(const char* file) {
 namespace android {
 namespace init {
 
-void StartConsole(const std::string& cmdline) {
+void StartConsole(const std::string& cmdline, const std::string& program) {
     bool console = KernelConsolePresent(cmdline);
     // Use a simple sigchld handler -- first_stage_console doesn't need to track or log zombies
     const struct sigaction chld_act{.sa_flags = SA_NOCLDWAIT, .sa_handler = SIG_DFL};
@@ -107,7 +107,7 @@ void StartConsole(const std::string& cmdline) {
     }
 
     if (console) {
-        if (SpawnImage("/system/bin/sh")) wait(NULL);
+        if (SpawnImage(program.c_str())) wait(NULL);
     }
     _exit(127);
 }
