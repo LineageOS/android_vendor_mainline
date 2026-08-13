@@ -256,9 +256,10 @@ cc_library_static {
 
 cc_defaults {
     name: "generic_init_second_stage_defaults",
-    stem: "generic_init",
+    stem: "init",
     defaults: ["generic_init_defaults"],
     srcs: ["main.cpp"],
+    overrides: ["init_second_stage.recovery"],
 }
 
 cc_binary {
@@ -285,7 +286,7 @@ cc_binary {
 
 cc_defaults {
     name: "generic_init_first_stage_defaults",
-    stem: "generic_init",
+    stem: "init",
 
     srcs: [
         "block_dev_initializer.cpp",
@@ -420,6 +421,9 @@ cc_defaults {
     },
 
     ramdisk: true,
+
+    install_in_root: true,
+    overrides: ["init_first_stage"],
 }
 
 cc_binary {
