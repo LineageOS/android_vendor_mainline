@@ -42,10 +42,12 @@ static bool KernelConsolePresent(const std::string& cmdline) {
 }
 
 static bool SetupConsole() {
-    if (mknod("/dev/console", S_IFCHR | 0600, makedev(5, 1))) {
+    if (mknod("/dev/console", S_IFCHR | 0600, makedev(5, 1)) < 0 &&
+        errno != EEXIST) {
         PLOG(ERROR) << "unable to create /dev/console";
         return false;
     }
+
     int fd = -1;
     int tries = 50;  // should timeout after 5s
     // The device driver for console may not be ready yet so retry for a while in case of failure.
@@ -58,28 +60,53 @@ static bool SetupConsole() {
         PLOG(ERROR) << "could not open /dev/console";
         return false;
     }
-    ioctl(fd, TIOCSCTTY, 0);
-    dup2(fd, STDIN_FILENO);
-    dup2(fd, STDOUT_FILENO);
-    dup2(fd, STDERR_FILENO);
+
+    // Become a session leader so we can acquire a controlling tty.
+    if (setsid() == -1) {
+        // EINVAL can happen if we're already a process-group leader.
+        // In this code path, however, we'd generally expect setsid()
+        // to succeed.
+        PLOG(ERROR) << "setsid() failed";
+        close(fd);
+        return false;
+    }
+
+    if (ioctl(fd, TIOCSCTTY, 0) < 0) {
+        PLOG(ERROR) << "TIOCSCTTY failed";
+        close(fd);
+        return false;
+    }
+
+    if (dup2(fd, STDIN_FILENO) < 0 ||
+        dup2(fd, STDOUT_FILENO) < 0 ||
+        dup2(fd, STDERR_FILENO) < 0) {
+        PLOG(ERROR) << "dup2() failed";
+        close(fd);
+        return false;
+    }
+
     close(fd);
     return true;
 }
 
-static pid_t SpawnImage(const char* file) {
-    const char* argv[] = {file, NULL};
-    const char* envp[] = {NULL};
+static bool SpawnImage(const char* file, pid_t* pid) {
+    const char* argv[] = {file, nullptr};
+    const char* envp[] = {nullptr};
 
-    char* const* argvp = const_cast<char* const*>(argv);
-    char* const* envpp = const_cast<char* const*>(envp);
+    int rc = posix_spawn(
+        pid,
+        file,
+        nullptr,
+        nullptr,
+        const_cast<char* const*>(argv),
+        const_cast<char* const*>(envp));
 
-    pid_t pid;
-    errno = posix_spawn(&pid, argv[0], NULL, NULL, argvp, envpp);
-    if (!errno) return pid;
+    if (rc == 0)
+        return true;
 
+    errno = rc;
     PLOG(ERROR) << "Failed to spawn '" << file << "'";
-
-    return (pid_t)0;
+    return false;
 }
 
 namespace android {
@@ -87,28 +114,47 @@ namespace init {
 
 void StartConsole(const std::string& cmdline, const std::string& program) {
     bool console = KernelConsolePresent(cmdline);
-    // Use a simple sigchld handler -- first_stage_console doesn't need to track or log zombies
-    const struct sigaction chld_act{.sa_flags = SA_NOCLDWAIT, .sa_handler = SIG_DFL};
 
+    // We need to wait for our child, so don't use SA_NOCLDWAIT.
+    struct sigaction chld_act {};
+    chld_act.sa_handler = SIG_DFL;
+    sigemptyset(&chld_act.sa_mask);
     sigaction(SIGCHLD, &chld_act, nullptr);
+
     pid_t pid = fork();
-    if (pid != 0) {
-        wait(NULL);
-        LOG(ERROR) << "console shell exited";
+
+    if (pid < 0) {
+        PLOG(ERROR) << "fork() failed";
+        return;
+    }
+
+    if (pid > 0) {
+        int status;
+        if (waitpid(pid, &status, 0) < 0) {
+            PLOG(ERROR) << "waitpid() failed";
+        } else {
+            LOG(ERROR) << "console shell exited";
+        }
         return;
     }
 
     if (console) console = SetupConsole();
 
     LOG(INFO) << "Attempting to run /first_stage.sh...";
-    if (SpawnImage("/first_stage.sh")) {
-        wait(NULL);
+
+    pid_t first_stage_sh_pid;
+    if (SpawnImage("/first_stage.sh", &first_stage_sh_pid)) {
+        waitpid(first_stage_sh_pid, nullptr, 0);
         LOG(INFO) << "/first_stage.sh exited";
     }
 
     if (console) {
-        if (SpawnImage(program.c_str())) wait(NULL);
+        pid_t shell_pid;
+        if (SpawnImage(program.c_str(), &shell_pid)) {
+            waitpid(shell_pid, nullptr, 0);
+        }
     }
+
     _exit(127);
 }
 
