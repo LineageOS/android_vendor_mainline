@@ -44,7 +44,6 @@ static bool KernelConsolePresent(const std::string& cmdline) {
 static bool SetupConsole() {
     if (mknod("/dev/console", S_IFCHR | 0600, makedev(5, 1))) {
         PLOG(ERROR) << "unable to create /dev/console";
-        return false;
     }
     int fd = -1;
     int tries = 50;  // should timeout after 5s
