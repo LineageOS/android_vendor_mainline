@@ -256,9 +256,16 @@ cc_library_static {
 
 cc_defaults {
     name: "generic_init_second_stage_defaults",
-    stem: "generic_init",
+    stem: select(soong_config_variable("mainline_generic_init", "override_aosp_first_stage_init"), {
+        true: "init",
+        default: "generic_init",
+    }),
     defaults: ["generic_init_defaults"],
     srcs: ["main.cpp"],
+    overrides: select(soong_config_variable("mainline_generic_init", "override_aosp_first_stage_init"), {
+        true: ["init_second_stage.recovery"],
+        default: [],
+    }),
 }
 
 cc_binary {
@@ -285,7 +292,10 @@ cc_binary {
 
 cc_defaults {
     name: "generic_init_first_stage_defaults",
-    stem: "generic_init",
+    stem: select(soong_config_variable("mainline_generic_init", "override_aosp_first_stage_init"), {
+        true: "init",
+        default: "generic_init",
+    }),
 
     srcs: [
         "block_dev_initializer.cpp",
@@ -420,6 +430,15 @@ cc_defaults {
     },
 
     ramdisk: true,
+
+    install_in_root: select(soong_config_variable("mainline_generic_init", "override_aosp_first_stage_init"), {
+        true: true,
+        default: false,
+    }),
+    overrides: select(soong_config_variable("mainline_generic_init", "override_aosp_first_stage_init"), {
+        true: ["init_first_stage"],
+        default: [],
+    }),
 }
 
 cc_binary {
