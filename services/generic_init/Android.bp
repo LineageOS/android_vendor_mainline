@@ -256,9 +256,10 @@ cc_library_static {
 
 cc_defaults {
     name: "generic_init_second_stage_defaults",
-    stem: "generic_init",
+    stem: "init",
     defaults: ["generic_init_defaults"],
     srcs: ["main.cpp"],
+    overrides: ["init_second_stage.recovery"],
 }
 
 cc_binary {
@@ -281,11 +282,19 @@ cc_binary {
         "first_stage_mount.cpp",
         "first_stage_mount_android.cpp",
     ],
+    required: [
+        "init_recovery.rc",
+        "ueventd.rc.recovery",
+        "e2fsdroid.recovery",
+        "make_f2fs.recovery",
+        "mke2fs.recovery",
+        "sload_f2fs.recovery",
+    ],
 }
 
 cc_defaults {
     name: "generic_init_first_stage_defaults",
-    stem: "generic_init",
+    stem: "init",
 
     srcs: [
         "block_dev_initializer.cpp",
@@ -419,7 +428,14 @@ cc_defaults {
         memtag_stack: false,
     },
 
+    // Install adb_debug.prop into debug ramdisk.
+    // This allows adb root on a user build, when debug ramdisk is used.
+    required: ["adb_debug.prop"],
+
     ramdisk: true,
+
+    install_in_root: true,
+    overrides: ["init_first_stage"],
 }
 
 cc_binary {
