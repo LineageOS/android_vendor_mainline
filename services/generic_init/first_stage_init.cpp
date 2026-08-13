@@ -643,6 +643,10 @@ int FirstStageMain(int argc, char** argv) {
         }
     }
 
+    if (want_console == FirstStageConsoleParam::START_VENDOR_SH_BOOTSTRAP) {
+        StartConsole(cmdline, "/vendor/bin/sh_bootstrap");
+    }
+
     struct stat new_root_info{};
     if (stat("/", &new_root_info) != 0) {
         PLOG(ERROR) << "Could not stat(\"/\"), not freeing ramdisk";

@@ -25,10 +25,11 @@ enum FirstStageConsoleParam {
     DISABLED = 0,
     CONSOLE_ON_FAILURE = 1,
     IGNORE_FAILURE = 2,
-    MAX_PARAM_VALUE = IGNORE_FAILURE,
+    START_VENDOR_SH_BOOTSTRAP = 3,
+    MAX_PARAM_VALUE = START_VENDOR_SH_BOOTSTRAP,
 };
 
-void StartConsole(const std::string& cmdline);
+void StartConsole(const std::string& cmdline, const std::string& program = "/system/bin/sh");
 int FirstStageConsole(const std::string& cmdline, const std::string& bootconfig);
 
 }  // namespace init
