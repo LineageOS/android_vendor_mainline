@@ -1,0 +1,46 @@
+//
+// SPDX-FileCopyrightText: The LineageOS Project
+// SPDX-License-Identifier: Apache-2.0
+//
+
+package {
+    default_applicable_licenses: ["hwdb_license"],
+}
+
+license {
+    name: "hwdb_license",
+    visibility: [":__subpackages__"],
+    license_kinds: [
+        "SPDX-license-identifier-LGPL-2.1",
+    ],
+}
+
+prebuilt_etc {
+    name: "60-sensor.hwdb",
+    src: "60-sensor.hwdb",
+    filename_from_src: true,
+    sub_dir: "hwdb.d",
+    vendor: true,
+}
+
+prebuilt_root {
+    name: "mainline_pci_ids",
+    src: "pci.ids",
+    filename_from_src: true,
+    enabled: select(soong_config_variable("hwdb_d", "pci_ids_enabled"), {
+        true: true,
+        default: false,
+    }),
+    vendor: true,
+}
+
+prebuilt_root {
+    name: "mainline_usb_ids",
+    src: "usb.ids",
+    filename_from_src: true,
+    enabled: select(soong_config_variable("hwdb_d", "usb_ids_enabled"), {
+        true: true,
+        default: false,
+    }),
+    vendor: true,
+}
