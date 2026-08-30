@@ -42,8 +42,7 @@ static bool KernelConsolePresent(const std::string& cmdline) {
 }
 
 static bool SetupConsole() {
-    if (mknod("/dev/console", S_IFCHR | 0600, makedev(5, 1)) < 0 &&
-        errno != EEXIST) {
+    if (mknod("/dev/console", S_IFCHR | 0600, makedev(5, 1)) < 0 && errno != EEXIST) {
         PLOG(ERROR) << "unable to create /dev/console";
         return false;
     }
@@ -77,9 +76,7 @@ static bool SetupConsole() {
         return false;
     }
 
-    if (dup2(fd, STDIN_FILENO) < 0 ||
-        dup2(fd, STDOUT_FILENO) < 0 ||
-        dup2(fd, STDERR_FILENO) < 0) {
+    if (dup2(fd, STDIN_FILENO) < 0 || dup2(fd, STDOUT_FILENO) < 0 || dup2(fd, STDERR_FILENO) < 0) {
         PLOG(ERROR) << "dup2() failed";
         close(fd);
         return false;
@@ -93,16 +90,10 @@ static bool SpawnImage(const char* file, pid_t* pid) {
     const char* argv[] = {file, nullptr};
     const char* envp[] = {nullptr};
 
-    int rc = posix_spawn(
-        pid,
-        file,
-        nullptr,
-        nullptr,
-        const_cast<char* const*>(argv),
-        const_cast<char* const*>(envp));
+    int rc = posix_spawn(pid, file, nullptr, nullptr, const_cast<char* const*>(argv),
+                         const_cast<char* const*>(envp));
 
-    if (rc == 0)
-        return true;
+    if (rc == 0) return true;
 
     errno = rc;
     PLOG(ERROR) << "Failed to spawn '" << file << "'";
@@ -116,7 +107,7 @@ void StartConsole(const std::string& cmdline, const std::string& program) {
     bool console = KernelConsolePresent(cmdline);
 
     // We need to wait for our child, so don't use SA_NOCLDWAIT.
-    struct sigaction chld_act {};
+    struct sigaction chld_act{};
     chld_act.sa_handler = SIG_DFL;
     sigemptyset(&chld_act.sa_mask);
     sigaction(SIGCHLD, &chld_act, nullptr);
