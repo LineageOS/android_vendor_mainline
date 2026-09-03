@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "8d738aab_23d2eaa9",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 4
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 32245
+      },
+      "writtenOn": "2026-09-03T18:02:59Z",
+      "side": 1,
+      "message": "```\ngeneric_init: Timed out waiting for path: /dev/block/loop0\ngeneric_init: Timed out trying to acquire a loop device\n```",
+      "revId": "f156e49262843f4abcb0c40040191c56af922c34",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    }
+  ]
+}
