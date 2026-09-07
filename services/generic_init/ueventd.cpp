@@ -28,6 +28,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <thread>
 
 #include <android-base/chrono_utils.h>
@@ -157,9 +158,14 @@ static UeventdConfiguration GetConfiguration() {
 void main_loop(const UeventListener& uevent_listener,
                const std::vector<std::shared_ptr<UeventHandler>>& uevent_handlers,
                const bool& first_run) {
+    const auto deadline = std::chrono::steady_clock::now() + 30s;
     do {
         uevent_listener.Poll(
-                [&uevent_handlers, &first_run](const Uevent& uevent) {
+                [&uevent_handlers, &first_run, &deadline](const Uevent& uevent) {
+                    if (!first_run && std::chrono::steady_clock::now() >= deadline) {
+                        LOG(WARNING) << "Deadline reached, exiting ueventd main loop";
+                        return ListenerAction::kStop;
+                    }
                     if (!first_run) {
                         LOG(INFO) << "Handle uevent " << ConstructUeventString(uevent);
                     }
