@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "126de700_e1b9d822",
+        "filename": "docs/review.md",
+        "patchSetId": 2
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 13648
+      },
+      "writtenOn": "2026-09-11T22:59:23Z",
+      "side": 1,
+      "message": "use",
+      "range": {
+        "startLine": 6,
+        "startChar": 3,
+        "endLine": 6,
+        "endChar": 7
+      },
+      "revId": "c30e31c53c01a0cd625591d5e95848a4f76b73b4",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "13bcf435_19365d31",
+        "filename": "docs/review.md",
+        "patchSetId": 2
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 13648
+      },
+      "writtenOn": "2026-09-11T22:59:23Z",
+      "side": 1,
+      "message": "also -1 and -2",
+      "range": {
+        "startLine": 10,
+        "startChar": 35,
+        "endLine": 10,
+        "endChar": 48
+      },
+      "revId": "c30e31c53c01a0cd625591d5e95848a4f76b73b4",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "06d38c23_7b94eb74",
+        "filename": "docs/review.md",
+        "patchSetId": 2
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 13648
+      },
+      "writtenOn": "2026-09-11T22:59:23Z",
+      "side": 1,
+      "message": "also -1",
+      "range": {
+        "startLine": 11,
+        "startChar": 37,
+        "endLine": 11,
+        "endChar": 42
+      },
+      "revId": "c30e31c53c01a0cd625591d5e95848a4f76b73b4",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    }
+  ]
+}
