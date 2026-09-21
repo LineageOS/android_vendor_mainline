@@ -182,7 +182,10 @@ libgeneric_init_cc_defaults {
         "libxml2",
         "update_metadata-protos",
         "libgenfslabelsversion.ffi",
-    ],
+    ] + select(soong_config_variable("generic_init", "enabled"), {
+        true: ["libzstd"],
+        default: [],
+    }),
     shared_libs: [
         "libbase",
         "libcutils",
@@ -205,6 +208,10 @@ libgeneric_init_cc_defaults {
     ],
     bootstrap: true,
     visibility: [":__subpackages__"],
+    enabled: select(soong_config_variable("generic_init", "enabled"), {
+        true: true,
+        default: false,
+    }),
 }
 
 cc_defaults {
