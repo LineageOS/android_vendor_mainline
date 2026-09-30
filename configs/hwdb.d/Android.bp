@@ -23,6 +23,14 @@ prebuilt_etc {
     vendor: true,
 }
 
+prebuilt_etc {
+    name: "70-cameras.hwdb",
+    src: "70-cameras.hwdb",
+    filename_from_src: true,
+    sub_dir: "hwdb.d",
+    vendor: true,
+}
+
 prebuilt_root {
     name: "hwdb_d_pci_ids",
     src: "pci.ids",
