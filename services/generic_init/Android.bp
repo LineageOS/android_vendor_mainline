@@ -171,7 +171,6 @@ libgeneric_init_cc_defaults {
         "libbootloader_message",
         "liblmkd_utils",
         "liblz4",
-        "libzstd",
         "libmodprobe",
         "libprocinfo",
         "libprotobuf-cpp-lite",
@@ -443,7 +442,9 @@ cc_binary {
         "libprotobuf-cpp-lite",
         "libsnapshot_cow",
         "libsnapshot_init",
-        "libzstd",
         "update_metadata-protos",
-    ],
+    ] + select(soong_config_variable("generic_init", "enabled"), {
+        true: ["libzstd"],
+        default: [],
+    }),
 }
