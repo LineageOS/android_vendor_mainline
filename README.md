@@ -5,3 +5,6 @@ has `visibility` limitation that contains `//vendor:__subpackages__` whitelist.
 
 Before adding a new component here, consider if it can be added into
 `device/mainline/common` repository instead.
+
+To see how all the mainline repositories relate, read
+[docs/REPOSITORIES.md](docs/REPOSITORIES.md).
