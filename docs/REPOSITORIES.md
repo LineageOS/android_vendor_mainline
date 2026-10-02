@@ -32,7 +32,7 @@ non-ext repo includes when present.
 |------|------|------|
 | `device/mainline/common` | Common device tree, `optional/` module switches, sepolicy, `libinit` | `docs/` (bringup guide), `README.md`, `optional/README.md` |
 | `hardware/mainline/common` | Mainline HALs (`interfaces/`) and tools; holds the shared code, commit and review standards | `docs/`, per-HAL `README.md` and `AGENTS.md` |
-| `vendor/mainline` | Components needing `//vendor:__subpackages__` visibility (`generic_init`, `fbkeyboard`), hwdb | `docs/` (this map, review) |
+| `vendor/mainline` | Components needing `//vendor:__subpackages__` visibility (`generic_init`, `fbkeyboard`), hwdb | `docs/` (this map, review), `services/generic_init/docs/` |
 | `kernel/mainline/configs` | Kernel config fragments and defconfigs | `fragments/*/README` |
 | `device/mainline/generic` | One image for many machines, runtime hardware detection | `docs/` |
 
@@ -115,6 +115,7 @@ The common repos stay SoC vendor neutral.
 | Add a HAL | `hardware/mainline/common/docs/WIRING_A_HAL.md` |
 | Review a change | `vendor/mainline/docs/review.md`, `hardware/mainline/common/docs/REVIEW.md` |
 | Generic tree | `device/mainline/generic/docs/` |
+| The `generic_init` init program | `vendor/mainline/services/generic_init/docs/README.md` |
 
 ## Rules for every session
 
