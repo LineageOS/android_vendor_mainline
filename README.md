@@ -8,3 +8,6 @@ Before adding a new component here, consider if it can be added into
 
 To see how all the mainline repositories relate, read
 [docs/REPOSITORIES.md](docs/REPOSITORIES.md).
+
+The `generic_init` init program is documented in
+[services/generic_init/docs/](services/generic_init/docs/README.md).

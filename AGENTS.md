@@ -12,6 +12,7 @@ relate and where each kind of change goes.
 |------|------|
 | Which repo, which docs | `docs/REPOSITORIES.md` |
 | Review a change | `docs/review.md` |
+| Work on `generic_init` | `services/generic_init/docs/README.md` |
 | Standards, workflow | `hardware/mainline/common/docs/` |
 
 ## Hard rules
